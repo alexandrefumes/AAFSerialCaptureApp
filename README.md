@@ -62,3 +62,21 @@ A organização atual separa o que tem responsabilidade própria (porta serial, 
 ## Licença
 
 Distribuído sob a [licença MIT](LICENSE).
+
+## Esteira de entrega
+
+O repositório usa GitHub Actions para manter a branch estável validada e publicar versões reproduzíveis:
+
+- Pushes e pull requests para `develop` ou `main` executam restore e build em Windows.
+- O trabalho cotidiano deve entrar em `develop` por pull request.
+- Quando `develop` estiver pronto, o merge para `main` representa a versão estável, mas não cria uma release automaticamente.
+- Para publicar, crie e envie uma tag no commit de `main`, no formato `vX.Y.Z`, por exemplo:
+
+```bash
+git switch main
+git pull
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+A tag dispara a publicação auto-contida para `win-x64`, cria uma GitHub Release e anexa o arquivo `AAFSerialCaptureApp-vX.Y.Z-win-x64.zip`. A esteira valida que a tag pertence ao histórico de `main`, evitando releases a partir de branches de desenvolvimento.
