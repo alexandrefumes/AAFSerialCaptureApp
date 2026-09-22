@@ -1,0 +1,156 @@
+<Window x:Class="AAFSerialCaptureApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:AAFSerialCaptureApp.Controls"
+    Title="AAF Serial Capture App" Height="720" Width="1100" MinHeight="500" MinWidth="800">
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="LabelStyle">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+        <Style TargetType="ListBoxItem" x:Key="StretchedItemStyle">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <!-- Connection + capture controls -->
+        <Border DockPanel.Dock="Top" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1" Padding="8">
+            <StackPanel>
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Porta:" Style="{StaticResource LabelStyle}" />
+                    <ComboBox x:Name="PortCombo" Width="90" Margin="0,0,6,0" />
+                    <Button x:Name="RefreshPortsButton" Content="Atualizar" Padding="6,2" Margin="0,0,12,0" Click="RefreshPortsButton_Click" />
+
+                    <TextBlock Text="Baud:" Style="{StaticResource LabelStyle}" />
+                    <ComboBox x:Name="BaudCombo" Width="90" Margin="0,0,12,0" IsEditable="True" />
+
+                    <Button x:Name="ConnectButton" Content="Conectar" Padding="10,2" Margin="0,0,4,0" Click="ConnectButton_Click" />
+                    <Button x:Name="DisconnectButton" Content="Desconectar" Padding="10,2" Margin="0,0,16,0" Click="DisconnectButton_Click" IsEnabled="False" />
+
+                    <TextBlock x:Name="ConnectionStatusText" Text="Desconectado" Foreground="Red" FontWeight="Bold" VerticalAlignment="Center" />
+                </WrapPanel>
+
+                <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,0,0">
+                    <TextBlock Text="Pasta:" Style="{StaticResource LabelStyle}" />
+                    <TextBox x:Name="FolderTextBox" Width="320" Margin="0,0,6,0" IsReadOnly="True" />
+                    <Button x:Name="BrowseFolderButton" Content="Selecionar Pasta..." Padding="6,2" Margin="0,0,16,0" Click="BrowseFolderButton_Click" />
+
+                    <TextBlock Text="Prefixo:" Style="{StaticResource LabelStyle}" />
+                    <TextBox x:Name="PrefixTextBox" Width="140" Text="captura" Margin="0,0,16,0" />
+
+                    <Button x:Name="NewCaptureButton" Content="Nova Captura" Padding="10,2" Margin="0,0,4,0" Click="NewCaptureButton_Click" IsEnabled="False" FontWeight="Bold" />
+
+                    <CheckBox x:Name="LiveChartCheckBox" Content="Gráfico em tempo real" IsChecked="True" VerticalAlignment="Center" Margin="12,0,0,0" Checked="LiveChartCheckBox_Checked" />
+                    <CheckBox x:Name="SmoothingCheckBox" Content="Suavizar (alta resolução)" IsChecked="True" VerticalAlignment="Center" Margin="12,0,0,0"
+                              Checked="SmoothingCheckBox_Changed" Unchecked="SmoothingCheckBox_Changed" />
+
+                    <TextBlock Text="Janela do gráfico:" Style="{StaticResource LabelStyle}" Margin="16,0,4,0" />
+                    <Slider x:Name="WindowSizeSlider" Width="160" Minimum="50" Maximum="5000" Value="1000"
+                            TickFrequency="250" IsSnapToTickEnabled="False" VerticalAlignment="Center"
+                            ValueChanged="WindowSizeSlider_ValueChanged" />
+                    <TextBlock x:Name="WindowSizeText" Text="1000 amostras" Style="{StaticResource LabelStyle}" Margin="6,0,0,0" />
+
+                    <Button Content="Configurações do Gráfico..." Padding="10,2" Margin="16,0,0,0" Click="OpenSettingsButton_Click" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom" Background="#F3F3F3" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="8,4">
+            <TextBlock x:Name="StatusText" Text="Pronto." />
+        </Border>
+
+        <!-- Existing capture files -->
+        <Border DockPanel.Dock="Left" Width="280" Background="#FAFAFA" BorderBrush="#DDDDDD" BorderThickness="0,0,1,0" Padding="8">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Arquivos capturados (.log)" FontWeight="Bold" Margin="0,0,0,6" />
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                    <Button Content="Atualizar Lista" Padding="6,2" Margin="0,0,6,0" Click="RefreshFilesButton_Click" />
+                    <Button Content="Carregar" Padding="6,2" FontWeight="Bold" Click="LoadFileButton_Click" />
+                </StackPanel>
+
+                <Grid DockPanel.Dock="Top" Height="200" Margin="0,0,0,6">
+                    <ListBox x:Name="CaptureFilesListBox" MouseDoubleClick="CaptureFilesListBox_MouseDoubleClick"
+                             SelectionChanged="CaptureFilesListBox_SelectionChanged" ItemContainerStyle="{StaticResource StretchedItemStyle}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="X" Padding="6,0" FontSize="10" FontWeight="Bold"
+                                            ToolTip="Excluir arquivo" Tag="{Binding}" Click="DeleteFileButton_Click" />
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+                <TextBlock DockPanel.Dock="Top" Text="Capturas dentro do arquivo selecionado:" FontWeight="Bold" Margin="0,0,0,4" />
+                <ListBox x:Name="CaptureBlocksListBox" ItemContainerStyle="{StaticResource StretchedItemStyle}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="0,2">
+                                <Button DockPanel.Dock="Right" Content="X" Padding="6,0" FontSize="10" FontWeight="Bold"
+                                        ToolTip="Excluir bloco" Tag="{Binding}" Click="DeleteBlockButton_Click" />
+                                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Captures -->
+        <TabControl x:Name="CapturesTabControl" Margin="4">
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                        <Button Content="X" Padding="4,0" FontSize="9" FontWeight="Bold" ToolTip="Fechar aba"
+                                Tag="{Binding}" Click="CloseTabButton_Click" />
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <DockPanel Margin="6">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="Arquivo: " FontWeight="Bold" />
+                            <TextBlock Text="{Binding FilePath}" Margin="0,0,20,0" />
+                            <TextBlock Text="{Binding ChannelsSummary}" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                            <Button Content="Continuar Captura" Padding="8,2" Margin="0,0,4,0" Click="ContinueCaptureButton_Click" Tag="{Binding}" />
+                            <Button Content="Parar Captura" Padding="8,2" Margin="0,0,8,0" Click="StopCaptureTabButton_Click" Tag="{Binding}" />
+                            <Button Content="Fechar Aba" Padding="8,2" Margin="0,0,8,0" Click="CloseTabButton_Click" Tag="{Binding}" />
+                            <Button Content="Abrir Log (.txt)" Padding="8,2" Click="OpenLogButton_Click" Tag="{Binding}" />
+                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="320" />
+                            </Grid.ColumnDefinitions>
+
+                            <controls:RealTimeChart Grid.Column="0" x:Name="Chart" Loaded="Chart_Loaded" Unloaded="Chart_Unloaded"
+                                                     DataContextChanged="Chart_DataContextChanged" />
+
+                            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="#DDDDDD" />
+
+                            <Grid Grid.Column="2" Margin="6,0,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Log ao vivo (últimas linhas):" FontWeight="Bold" Margin="0,0,0,2" />
+                                <TextBox Grid.Row="1" IsReadOnly="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                         FontFamily="Consolas" FontSize="11" TextWrapping="NoWrap"
+                                         Loaded="RawLogTextBox_Loaded" Unloaded="RawLogTextBox_Unloaded"
+                                         DataContextChanged="RawLogTextBox_DataContextChanged" />
+                            </Grid>
+                        </Grid>
+                    </DockPanel>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+    </DockPanel>
+</Window>
